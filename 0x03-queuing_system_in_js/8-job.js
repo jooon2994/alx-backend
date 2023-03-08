@@ -1,19 +1,33 @@
-const createPushNotificationsJobs = (jobs, queue) => {
-  if (!(jobs instanceof Array)) throw Error("Jobs is not an array");
-    jobs.forEach((j) => {
-    const job = queue.create("push_notification_code_3", j).save((err) => {
-    if (!err) console.log(`Notification job created: ${job.id}`);
-    });
-    job.on("complete", () =>
-    console.log(`Notification job ${job.id} completed`)
-    );
-    job.on("failed", (error) =>
-    console.log(`Notification job ${job.id} failed: ${error}`)
-    );
-    job.on("progress", (progress) =>
-    console.log(`Notification job ${job.id} ${progress}% complete`)
-    );
-  });
+#!/usr/bin/yarn dev
+import { Queue, Job } from 'kue';
+
+/**
+ * Creates push notification jobs from the array of jobs info.
+ * @param {Job[]} jobs
+ * @param {Queue} queue
+ */
+export const createPushNotificationsJobs = (jobs, queue) => {
+  if (!(jobs instanceof Array)) {
+    throw new Error('Jobs is not an array');
+  }
+  for (const jobInfo of jobs) {
+    const job = queue.create('push_notification_code_3', jobInfo);
+
+    job
+      .on('enqueue', () => {
+        console.log('Notification job created:', job.id);
+      })
+      .on('complete', () => {
+        console.log('Notification job', job.id, 'completed');
+      })
+      .on('failed', (err) => {
+        console.log('Notification job', job.id, 'failed:', err.message || err.toString());
+      })
+      .on('progress', (progress, _data) => {
+        console.log('Notification job', job.id, `${progress}% complete`);
+      });
+    job.save();
+  }
 };
 
-module.exports = createPushNotificationsJobs;
+export default createPushNotificationsJobs;
